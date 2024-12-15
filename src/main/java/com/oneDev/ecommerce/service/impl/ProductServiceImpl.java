@@ -3,11 +3,12 @@ package com.oneDev.ecommerce.service.impl;
 import com.oneDev.ecommerce.entity.Category;
 import com.oneDev.ecommerce.entity.Product;
 import com.oneDev.ecommerce.entity.ProductCategory;
-import com.oneDev.ecommerce.exception.ResourceNotFoundException;
-import com.oneDev.ecommerce.model.CategoryResponse;
-import com.oneDev.ecommerce.model.PaginatedProductResponse;
-import com.oneDev.ecommerce.model.ProductRequest;
-import com.oneDev.ecommerce.model.ProductResponse;
+import com.oneDev.ecommerce.enumaration.ExceptionType;
+import com.oneDev.ecommerce.exception.ApplicationException;
+import com.oneDev.ecommerce.model.response.CategoryResponse;
+import com.oneDev.ecommerce.model.response.PaginatedProductResponse;
+import com.oneDev.ecommerce.model.request.ProductRequest;
+import com.oneDev.ecommerce.model.response.ProductResponse;
 import com.oneDev.ecommerce.repository.ProductCategoryRepository;
 import com.oneDev.ecommerce.repository.ProductRepository;
 import com.oneDev.ecommerce.service.CategoryService;
@@ -42,7 +43,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse findProductById(Long productId) {
         Product existingProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Data not found for the given ID: "+ productId));
+                .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND));
 
         List<CategoryResponse> productCategories = getProductCategories(productId);
         return ProductResponse.fromProductAndCategories(existingProduct, productCategories);
@@ -84,7 +85,8 @@ public class ProductServiceImpl implements ProductService {
 
         Product existingProduct = productRepository.findById(productId)
                 .orElseThrow(() -> {
-                    return new ResourceNotFoundException("Data not found for the given ID: "+ productId);
+                    return new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND,
+                            ExceptionType.RESOURCE_NOT_FOUND.getFormattedMessage("with product id=" + productId));
                 });
 
         List<Category> categories = categoryService.findAll(productRequest.getCategoryIds());
@@ -122,7 +124,8 @@ public class ProductServiceImpl implements ProductService {
     @Override @Transactional
     public void deleteProductById(Long productId) {
         Product existingProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Data not found for the given ID: " + productId));
+                .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND,
+                        ExceptionType.RESOURCE_NOT_FOUND.getFormattedMessage("with product id=" + productId)));
         List<ProductCategory> existingProductCategories = productCategoryRepository.findCategoriesByProductId(productId);
 
         productCategoryRepository.deleteAll(existingProductCategories);

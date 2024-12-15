@@ -1,8 +1,8 @@
 package com.oneDev.ecommerce.controller;
 
-import com.oneDev.ecommerce.model.PaginatedProductResponse;
-import com.oneDev.ecommerce.model.ProductRequest;
-import com.oneDev.ecommerce.model.ProductResponse;
+import com.oneDev.ecommerce.model.response.PaginatedProductResponse;
+import com.oneDev.ecommerce.model.request.ProductRequest;
+import com.oneDev.ecommerce.model.response.ProductResponse;
 import com.oneDev.ecommerce.service.ProductService;
 import com.oneDev.ecommerce.utils.PageUtil;
 import jakarta.validation.Valid;
@@ -11,7 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.support.PageableUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

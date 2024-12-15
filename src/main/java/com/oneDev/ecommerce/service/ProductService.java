@@ -1,8 +1,8 @@
 package com.oneDev.ecommerce.service;
 
-import com.oneDev.ecommerce.model.PaginatedProductResponse;
-import com.oneDev.ecommerce.model.ProductRequest;
-import com.oneDev.ecommerce.model.ProductResponse;
+import com.oneDev.ecommerce.model.response.PaginatedProductResponse;
+import com.oneDev.ecommerce.model.request.ProductRequest;
+import com.oneDev.ecommerce.model.response.ProductResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
