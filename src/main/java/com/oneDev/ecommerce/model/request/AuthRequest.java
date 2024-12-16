@@ -1,4 +1,4 @@
-package com.oneDev.ecommerce.model;
+package com.oneDev.ecommerce.model.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

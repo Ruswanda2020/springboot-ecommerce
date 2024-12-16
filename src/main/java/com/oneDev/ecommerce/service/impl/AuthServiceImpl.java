@@ -2,7 +2,7 @@ package com.oneDev.ecommerce.service.impl;
 
 import com.oneDev.ecommerce.enumaration.ExceptionType;
 import com.oneDev.ecommerce.exception.ApplicationException;
-import com.oneDev.ecommerce.model.AuthRequest;
+import com.oneDev.ecommerce.model.request.AuthRequest;
 import com.oneDev.ecommerce.model.UserInfo;
 import com.oneDev.ecommerce.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class AuthServiceImpl implements AuthService {
             return (UserInfo) authentication.getPrincipal();
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new ApplicationException(ExceptionType.INVALID_PASSWORD, "Invalid username password");
+            throw new ApplicationException(ExceptionType.INVALID_PASSWORD, "Invalid username or password");
         }
     }
 }

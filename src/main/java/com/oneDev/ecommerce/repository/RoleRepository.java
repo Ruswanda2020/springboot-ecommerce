@@ -12,7 +12,7 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     Optional<Role> findByName(String name);
 
     @Query(value = """
-        SELECT r.* FROM role r
+        SELECT r.* FROM roles r
         JOIN user_role ur ON ur.role_id = r.role_id
         JOIN users u ON ur.user_id = u.user_id
         WHERE u.user_id = :userId

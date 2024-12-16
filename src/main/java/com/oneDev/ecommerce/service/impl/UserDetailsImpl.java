@@ -8,6 +8,7 @@ import com.oneDev.ecommerce.model.UserInfo;
 import com.oneDev.ecommerce.repository.RoleRepository;
 import com.oneDev.ecommerce.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,6 +18,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserDetailsImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
@@ -24,9 +26,11 @@ public class UserDetailsImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.info("Loading user by username: {}", username);
         User user = userRepository.findByKeyword(username)
                 .orElseThrow(() -> new ApplicationException(ExceptionType.USER_NOT_FOUND, "User not found with: " + username));
 
+        log.info("User found: {}", user);
         List<Role> roles = roleRepository.findByUserId(user.getUserId());
         return UserInfo.builder()
                 .user(user)

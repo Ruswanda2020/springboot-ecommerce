@@ -40,7 +40,7 @@ public class JwtServiceImpl implements JwtService {
             JwtParser jwtParser = Jwts.parserBuilder()
                     .setSigningKey(signKey)
                     .build();
-            jwtParser.parseClaimsJwt(token);
+            jwtParser.parseClaimsJws(token);
             return true;
         } catch (SignatureException | IllegalArgumentException | UnsupportedJwtException | MalformedJwtException |
                  ExpiredJwtException ex) {
@@ -53,7 +53,7 @@ public class JwtServiceImpl implements JwtService {
         JwtParser jwtParser = Jwts.parserBuilder()
                 .setSigningKey(signKey)
                 .build();
-       return jwtParser.parseClaimsJwt(token)
+       return jwtParser.parseClaimsJws(token)
                 .getBody()
                 .getSubject();
 

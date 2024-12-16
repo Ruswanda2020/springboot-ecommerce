@@ -2,10 +2,7 @@ package com.oneDev.ecommerce.model.request;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,6 +16,7 @@ public class UserRegisterRequest {
     private String username;
 
     @NotBlank(message = "Email is required")
+    @NotNull(message = "email must not be null")
     @Email(message = "Invalid email format")
     private String email;
 
