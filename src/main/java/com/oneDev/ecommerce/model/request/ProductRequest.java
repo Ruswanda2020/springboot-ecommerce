@@ -1,5 +1,6 @@
 package com.oneDev.ecommerce.model.request;
 
+import com.oneDev.ecommerce.entity.User;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,6 +37,8 @@ public class ProductRequest {
     @Min(value = 1000, message = "Berat tidak boleh kurang dari 1000 gram ")
     private BigDecimal weight;
 
+    private User user;
+    
     @NotEmpty(message = "Harus ada satu kategori yang dipilih")
     private List<Long> categoryIds;
 }

@@ -15,18 +15,16 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @Entity
-@Table(name = "category")
-public class Category {
+@Table(name = "carts")
+public class Cart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long categoryId;
+    @Column(name = "cart_id")
+    private Long cartId;
 
-    @Column(nullable = false)
-    private String name;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

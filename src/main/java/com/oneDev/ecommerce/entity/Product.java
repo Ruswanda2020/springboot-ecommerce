@@ -39,6 +39,8 @@ public class Product {
     @Column(nullable = false, name = "weight")
     private BigDecimal weight;
 
+    @Column(name = "user_id")
+    private Long userId;
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

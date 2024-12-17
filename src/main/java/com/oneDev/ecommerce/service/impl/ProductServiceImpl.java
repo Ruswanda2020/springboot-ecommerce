@@ -56,6 +56,7 @@ public class ProductServiceImpl implements ProductService {
                 .name(productRequest.getName())
                 .price(productRequest.getPrice())
                 .weight(productRequest.getWeight())
+                .userId(productRequest.getUser().getUserId())
                 .StockQuantity(productRequest.getStockQuantity())
                 .description(productRequest.getDescription())
                 .build();

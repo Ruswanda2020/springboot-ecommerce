@@ -1,10 +1,13 @@
 package com.oneDev.ecommerce.controller;
 
+import com.oneDev.ecommerce.model.UserInfo;
 import com.oneDev.ecommerce.model.response.PaginatedProductResponse;
 import com.oneDev.ecommerce.model.request.ProductRequest;
 import com.oneDev.ecommerce.model.response.ProductResponse;
 import com.oneDev.ecommerce.service.ProductService;
 import com.oneDev.ecommerce.utils.PageUtil;
+import com.oneDev.ecommerce.utils.UserInfoHelper;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,9 +23,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/product")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "Bearer")
 public class ProductController {
 
     private final ProductService productService;
+    private final UserInfoHelper userInfoHelper;
 
     @GetMapping("/{productId}")
     public ResponseEntity<ProductResponse> findProductById(@PathVariable Long productId) {
@@ -32,6 +37,8 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest productRequest) {
+        UserInfo userInfo = userInfoHelper.getCurrentUserInfo();
+        productRequest.setUser(userInfo.getUser());
         ProductResponse productResponse = productService.createNewProduct(productRequest);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
