@@ -73,6 +73,7 @@ public class UserAddressServiceImpl implements UserAddressService {
 
         UserAddresses userAddresses = UserAddresses.builder()
                 .userAddressId(existingAddress.getUserAddressId())
+                .userId(existingAddress.getUserId())
                 .addressName(userAddressRequest.getAddressName())
                 .state(userAddressRequest.getState())
                 .city(userAddressRequest.getCity())
@@ -137,7 +138,7 @@ public class UserAddressServiceImpl implements UserAddressService {
                         ExceptionType.RESOURCE_NOT_FOUND, "User address not found with id: " + userAddressId));
 
         // Memastikan alamat yang akan diatur default milik pengguna yang sesuai.
-        if (existingAddress.getUserId().equals(userId)){
+        if (!existingAddress.getUserId().equals(userId)){
             throw new ApplicationException(ExceptionType.FORBIDDEN, "Address doesn't belong to this user.");
 
         }

@@ -6,9 +6,9 @@ import com.oneDev.ecommerce.model.response.OrderResponse;
 import com.oneDev.ecommerce.model.response.UserAddressResponse;
 import com.oneDev.ecommerce.service.UserAddressService;
 import com.oneDev.ecommerce.utils.UserInfoHelper;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +17,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/address")
+@SecurityRequirement(name = "Bearer")
 public class UserAddressController {
 
     private final UserAddressService userAddressService;

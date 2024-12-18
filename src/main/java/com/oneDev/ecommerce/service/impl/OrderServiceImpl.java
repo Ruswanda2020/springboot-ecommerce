@@ -4,8 +4,10 @@ import com.oneDev.ecommerce.entity.*;
 import com.oneDev.ecommerce.enumaration.ExceptionType;
 import com.oneDev.ecommerce.exception.ApplicationException;
 import com.oneDev.ecommerce.model.request.CheckOutRequest;
+import com.oneDev.ecommerce.model.request.ShippingOrderRequest;
 import com.oneDev.ecommerce.model.request.ShippingRateRequest;
 import com.oneDev.ecommerce.model.response.OrderItemResponse;
+import com.oneDev.ecommerce.model.response.ShippingOrderResponse;
 import com.oneDev.ecommerce.model.response.ShippingRateResponse;
 import com.oneDev.ecommerce.repository.*;
 import com.oneDev.ecommerce.service.OrderService;
@@ -39,110 +41,91 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order checkOut(CheckOutRequest checkOutRequest) {
-
-        // Ambil item di keranjang berdasarkan ID yang dipilih pengguna.
+        // 1. Ambil item di keranjang berdasarkan ID yang dipilih pengguna.
         List<CartItem> cartItems = cartItemRepository
                 .findAllById(checkOutRequest.getSelectedCartItemIds());
-
-        // Jika item keranjang yang dipilih kosong, lempar exception bahwa data tidak ditemukan.
         if (cartItems.isEmpty()) {
-            throw new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND,
-                    "Cart items not found for the given IDs.");
+            // Jika item kosong, lempar exception.
+            throw new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND, "Cart items not found for the given IDs.");
         }
 
-        // Cari alamat pengiriman pengguna berdasarkan userId dalam request.
-        UserAddresses userShippingAddress = userAddressesRepository.findById(checkOutRequest.getUserId())
-                .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND,
-                        "User address not found for the given user ID."));
+        // 2. Ambil alamat pengiriman pengguna berdasarkan ID.
+        UserAddresses userShippingAddress = userAddressesRepository
+                .findById(checkOutRequest.getUserAddressId())
+                .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND, "User address not found."));
 
-        // Jika request valid, buat objek Order baru
+        // 3. Buat objek Order baru dengan nilai default.
         Order newOrder = Order.builder()
                 .userId(checkOutRequest.getUserId())
-                .status("PENDING")
-                .orderDate(LocalDateTime.now())
+                .status("PENDING") // Status default: PENDING
+                .orderDate(LocalDateTime.now()) // Tanggal pesanan dibuat
                 .taxFee(BigDecimal.ZERO)
                 .totalAmount(BigDecimal.ZERO)
                 .shippingFee(BigDecimal.ZERO)
                 .subtotal(BigDecimal.ZERO)
                 .build();
 
-        // Simpan data pesanan ke database dan dapatkan objek pesanan yang sudah disimpan.
+        // 4. Simpan order ke database.
         Order savedOrder = orderRepository.save(newOrder);
 
-        // Buat daftar `OrdersItems` dari item keranjang yang dipilih.
+        // 5. Konversi item keranjang ke orderItems dan simpan ke database.
         List<OrdersItems> orderItems = cartItems.stream()
-                .map(cartItem -> {
-                    // Untuk setiap item di keranjang, buat item pesanan.
-                    return OrdersItems.builder()
-                            .orderId(savedOrder.getOrderId())
-                            .productId(cartItem.getProductId())
-                            .quantity(cartItem.getQuantity())
-                            .userAddressId(userShippingAddress.getUserId())
-                            .build();
-                }).toList();
-
-        // Simpan semua item pesanan ke database.
+                .map(cartItem -> OrdersItems.builder()
+                        .orderId(savedOrder.getOrderId()) // ID order yang baru dibuat
+                        .productId(cartItem.getProductId())
+                        .price(cartItem.getPrice())
+                        .quantity(cartItem.getQuantity())
+                        .userAddressId(userShippingAddress.getUserAddressId())
+                        .build())
+                .toList();
         orderItemRepository.saveAll(orderItems);
 
-        // Hapus item yang sudah dipesan dari keranjang pengguna.
+        // 6. Hapus item keranjang yang sudah diproses.
         cartItemRepository.deleteAll(cartItems);
 
-        // Hitung total pesanan berdasarkan harga dan kuantitas setiap item.
+        // 7. Hitung subtotal berdasarkan harga * kuantitas setiap item.
         BigDecimal subTotal = orderItems.stream()
-                .map(orderItem ->
-                        // Harga per item dikalikan kuantitas, kemudian diakumulasikan.
-                        orderItem.getPrice()
-                                .multiply(BigDecimal.valueOf(orderItem.getQuantity()))
-                ).reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(orderItem -> orderItem.getPrice()
+                        .multiply(BigDecimal.valueOf(orderItem.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Hitung biaya pengiriman dari setiap item pesanan.
-        BigDecimal shippingFee = orderItems.stream()
+        // 8. Hitung total berat produk untuk biaya pengiriman.
+        BigDecimal totalWeight = orderItems.stream()
                 .map(orderItem -> {
-                    // Cari data produk berdasarkan productId.
-                    Optional<Product> product = productRepository.findById(orderItem.getProductId());
-                    if (product.isEmpty()) {
-                        return BigDecimal.ZERO;
+                    Product product = productRepository.findById(orderItem.getProductId())
+                            .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND, "Product not found."));
+                    if (product.getWeight() == null) {
+                        throw new ApplicationException(ExceptionType.BAD_REQUEST, "Product weight cannot be null");
                     }
-
-                    // Cari alamat penjual produk.
-                    Optional<UserAddresses> sellerAddresses = userAddressesRepository.findByUserIdAndIsDefaultTrue(
-                            product.get().getUserId()
-                    );
-
-                    if (sellerAddresses.isEmpty()) {
-                        return BigDecimal.ZERO;
-                    }
-
-                    // Hitung total berat barang berdasarkan jumlah item.
-                    BigDecimal totalWeight = product.get().getWeight()
-                            .multiply(BigDecimal.valueOf(orderItem.getQuantity()));
-
-                    // Buat request untuk menghitung biaya pengiriman.
-                    ShippingRateRequest shippingRateRequest = ShippingRateRequest.builder()
-                            .fromAddress(ShippingRateRequest.from(sellerAddresses.get()))
-                            .toAddress(ShippingRateRequest.from(userShippingAddress))
-                            .totalWeightInGrams(totalWeight)
-                            .build();
-
-                    // Hitung biaya pengiriman menggunakan layanan eksternal.
-                    ShippingRateResponse shippingRateResponse = shippingService.calculateShippingRate(shippingRateRequest);
-                    return shippingRateResponse.getShippingFee();
+                    return product.getWeight().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
                 }).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Hitung pajak dari subtotal.
+        // 9. Buat request biaya pengiriman berdasarkan total berat.
+        ShippingRateRequest shippingRateRequest = ShippingRateRequest.builder()
+                .totalWeightInGrams(totalWeight)
+                .fromAddress(ShippingRateRequest.from(userShippingAddress))
+                .toAddress(ShippingRateRequest.from(userShippingAddress))
+                .build();
+
+        // 10. Hitung biaya pengiriman menggunakan layanan shippingService.
+        BigDecimal shippingFee = shippingService.calculateShippingRate(shippingRateRequest).getShippingFee();
+
+        // 11. Hitung pajak (TAX_RATE * subtotal).
         BigDecimal taxFee = subTotal.multiply(Tax_RATE);
 
-        // Hitung total pesanan (subtotal + pajak + biaya pengiriman).
+        // 12. Hitung total pesanan (subtotal + pajak + biaya pengiriman).
         BigDecimal totalAmount = subTotal.add(taxFee).add(shippingFee);
 
-        // Perbarui total pesanan di objek Order.
+        // 13. Perbarui nilai subtotal, shippingFee, taxFee, dan totalAmount di order.
         savedOrder.setSubtotal(subTotal);
         savedOrder.setShippingFee(shippingFee);
+        savedOrder.setTaxFee(taxFee);
         savedOrder.setTotalAmount(totalAmount);
 
-        // Simpan pesanan yang diperbarui dan kembalikan hasilnya.
+        // 14. Simpan order yang diperbarui dan kembalikan hasilnya.
         return orderRepository.save(savedOrder);
     }
+
 
     @Override
     public Optional<Order> findOrderById(Long orderId) {
