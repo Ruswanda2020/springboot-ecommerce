@@ -14,9 +14,9 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
-       SELECT * FROM users 
+       SELECT * FROM users
        WHERE username = :keyword
-       OR email = :keyword 
+       OR email = :keyword
     """, nativeQuery = true)
     Optional<User> findByKeyword(@Param("keyword") String keyword);
     Boolean existsByUsername(String username);

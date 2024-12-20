@@ -99,6 +99,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.xendit/xendit-java-lib -->
+		<dependency>
+			<groupId>com.xendit</groupId>
+			<artifactId>xendit-java-lib</artifactId>
+			<version>1.20.4</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

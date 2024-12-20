@@ -28,8 +28,14 @@ public class ApiSecurityConfig {
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
 
        return http.csrf(AbstractHttpConfigurer::disable)
+               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(registry ->{
-                   registry.requestMatchers("/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                   registry.requestMatchers(
+                                   "/auth/**",
+                                   "/v3/api-docs/**",
+                                   "/swagger-ui/**",
+                                   "/webhook/xendit")
+                           .permitAll()
                            .anyRequest().authenticated();
                 }).sessionManagement(configure -> {
                     configure.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
@@ -46,12 +52,14 @@ public class ApiSecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:8080"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        System.out.println("CORS Configuration Initialized: " + configuration);
         return source;
     }
 

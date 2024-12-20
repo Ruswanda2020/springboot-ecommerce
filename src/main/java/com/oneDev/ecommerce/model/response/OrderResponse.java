@@ -26,6 +26,10 @@ public class OrderResponse implements Serializable {
     private BigDecimal totalAmount;
     private String orderStatus;
     private LocalDateTime orderDate;
+    private String xenditInvoiceId;
+    private String xenditPaymentStatus;
+    private String xenditPaymentMethod;
+    private String xenditPaymentUrl;
 
     public static OrderResponse from(Order order) {
         return OrderResponse.builder()
@@ -37,6 +41,9 @@ public class OrderResponse implements Serializable {
                 .totalAmount(order.getTotalAmount())
                 .orderDate(order.getOrderDate())
                 .orderStatus(order.getStatus())
+                .xenditInvoiceId(order.getXenditInvoiceId())
+                .xenditPaymentStatus(order.getXenditPaymentStatus())
+                .xenditPaymentMethod(order.getXenditPaymentMethod())
                 .build();
     }
 }

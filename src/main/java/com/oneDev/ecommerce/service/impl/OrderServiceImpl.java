@@ -4,16 +4,17 @@ import com.oneDev.ecommerce.entity.*;
 import com.oneDev.ecommerce.enumaration.ExceptionType;
 import com.oneDev.ecommerce.exception.ApplicationException;
 import com.oneDev.ecommerce.model.request.CheckOutRequest;
-import com.oneDev.ecommerce.model.request.ShippingOrderRequest;
 import com.oneDev.ecommerce.model.request.ShippingRateRequest;
 import com.oneDev.ecommerce.model.response.OrderItemResponse;
-import com.oneDev.ecommerce.model.response.ShippingOrderResponse;
-import com.oneDev.ecommerce.model.response.ShippingRateResponse;
+import com.oneDev.ecommerce.model.response.OrderResponse;
+import com.oneDev.ecommerce.model.response.PaymentResponse;
 import com.oneDev.ecommerce.repository.*;
 import com.oneDev.ecommerce.service.OrderService;
+import com.oneDev.ecommerce.service.PaymentService;
 import com.oneDev.ecommerce.service.ShippingService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService {
 
     private final CartItemRepository cartItemRepository;
@@ -35,12 +37,13 @@ public class OrderServiceImpl implements OrderService {
     private final UserAddressesRepository userAddressesRepository;
     private final ProductRepository productRepository;
     private final ShippingService shippingService;
+    private final PaymentService paymentService;
 
     private final BigDecimal Tax_RATE = BigDecimal.valueOf(0.03);
 
     @Override
     @Transactional
-    public Order checkOut(CheckOutRequest checkOutRequest) {
+    public OrderResponse checkOut(CheckOutRequest checkOutRequest) {
         // 1. Ambil item di keranjang berdasarkan ID yang dipilih pengguna.
         List<CartItem> cartItems = cartItemRepository
                 .findAllById(checkOutRequest.getSelectedCartItemIds());
@@ -121,9 +124,28 @@ public class OrderServiceImpl implements OrderService {
         savedOrder.setShippingFee(shippingFee);
         savedOrder.setTaxFee(taxFee);
         savedOrder.setTotalAmount(totalAmount);
+        orderRepository.save(savedOrder);
 
-        // 14. Simpan order yang diperbarui dan kembalikan hasilnya.
-        return orderRepository.save(savedOrder);
+        //interact wit xendit api
+        //generate payment url
+        String paymentUrl;
+        try {
+            PaymentResponse paymentResponse = paymentService.create(savedOrder);
+            savedOrder.setXenditInvoiceId(paymentResponse.getXenditInvoiceId());
+            savedOrder.setXenditPaymentStatus(paymentResponse.getXenditInvoiceStatus());
+            paymentUrl = paymentResponse.getXenditPaymentUrl();
+
+            orderRepository.save(savedOrder);
+        } catch (Exception e) {
+            log.error("Payment creation for order {} failed Reason{}", savedOrder.getOrderId(), e.getMessage());
+            savedOrder.setStatus("PAYMENT_FAILED");
+            orderRepository.save(savedOrder);
+             return OrderResponse.from(savedOrder);
+        }
+
+        OrderResponse orderResponse = OrderResponse.from(savedOrder);
+        orderResponse.setXenditPaymentUrl(paymentUrl);
+        return orderResponse;
     }
 
 

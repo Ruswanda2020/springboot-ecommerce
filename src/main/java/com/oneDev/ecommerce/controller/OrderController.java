@@ -29,8 +29,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CheckOutRequest checkOutRequest) {
         UserInfo userInfo = userInfoHelper.getCurrentUserInfo();
         checkOutRequest.setUserId(userInfo.getUser().getUserId());
-        Order order = orderService.checkOut(checkOutRequest);
-        OrderResponse orderResponse = OrderResponse.from(order);
+        OrderResponse orderResponse = orderService.checkOut(checkOutRequest);
         return ResponseEntity.ok(orderResponse);
     }
 

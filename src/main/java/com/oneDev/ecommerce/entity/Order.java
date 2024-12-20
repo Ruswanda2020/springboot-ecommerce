@@ -45,6 +45,15 @@ public class Order {
     @Column(name = "awb_number", length = 50)
     private String awbNumber;
 
+    @Column(name = "xendit_invoice_id")
+    private String xenditInvoiceId;
+
+    @Column(name = "xendit_payment_method")
+    private String xenditPaymentMethod;
+
+    @Column(name = "xendit_payment_status")
+    private String xenditPaymentStatus;
+
     @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate;
 

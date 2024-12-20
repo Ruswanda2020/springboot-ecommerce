@@ -1,0 +1,1 @@
+CREATE INDEX idx_order_xendit_invoice_id on orders(xendit_invoice_id);
