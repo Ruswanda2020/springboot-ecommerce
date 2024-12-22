@@ -2,6 +2,8 @@ package com.oneDev.ecommerce.repository;
 
 import com.oneDev.ecommerce.entity.Order;
 import com.oneDev.ecommerce.enumaration.OrderStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +17,12 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByUserId(Long userId);
+
+    @Query(value = """
+    SELECT * FROM orders
+    WHERE user_id = :userId
+""", nativeQuery = true)
+    Page<Order> findByUserIdByPageable(Long userId, Pageable pageable);
     List<Order> findByStatus(OrderStatus status);
 
 

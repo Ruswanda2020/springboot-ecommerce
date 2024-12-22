@@ -59,7 +59,6 @@ public class ApiSecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        System.out.println("CORS Configuration Initialized: " + configuration);
         return source;
     }
 

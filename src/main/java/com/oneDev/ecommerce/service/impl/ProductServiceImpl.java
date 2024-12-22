@@ -13,7 +13,6 @@ import com.oneDev.ecommerce.repository.ProductCategoryRepository;
 import com.oneDev.ecommerce.repository.ProductRepository;
 import com.oneDev.ecommerce.service.CategoryService;
 import com.oneDev.ecommerce.service.ProductService;
-import com.oneDev.ecommerce.utils.UserInfoHelper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

@@ -8,11 +8,17 @@ import com.oneDev.ecommerce.model.UserInfo;
 import com.oneDev.ecommerce.model.request.CheckOutRequest;
 import com.oneDev.ecommerce.model.response.OrderItemResponse;
 import com.oneDev.ecommerce.model.response.OrderResponse;
+import com.oneDev.ecommerce.model.response.PaginatedOrderResponse;
 import com.oneDev.ecommerce.service.OrderService;
+import com.oneDev.ecommerce.utils.PageUtil;
 import com.oneDev.ecommerce.utils.UserInfoHelper;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,13 +57,22 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> findOrdersByUserId() {
+    public ResponseEntity<PaginatedOrderResponse> findOrdersByUserId(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "order_id, asc") String[] sort,
+            @RequestParam(required = false) String name
+    ) {
         UserInfo userInfo = userInfoHelper.getCurrentUserInfo();
 
-        List<Order> userOrders = orderService.findByUserId(userInfo.getUser().getUserId());
-        List<OrderResponse> orderResponses = userOrders.stream()
-                .map(OrderResponse::from).toList();
-        return ResponseEntity.ok(orderResponses);
+        List<Sort.Order> sortOrder = PageUtil.parsSortOrderRequest(sort);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortOrder));
+
+        Page<OrderResponse> orderResponses = orderService.findByUserIdAndPageable(
+                userInfo.getUser().getUserId(), pageable);
+
+        PaginatedOrderResponse paginatedOrderResponse = orderService.convertToOrderPage(orderResponses);
+        return ResponseEntity.ok(paginatedOrderResponse);
     }
 
     @PutMapping("/{orderId}/cancel")

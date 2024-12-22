@@ -6,9 +6,7 @@ import com.oneDev.ecommerce.enumaration.OrderStatus;
 import com.oneDev.ecommerce.exception.ApplicationException;
 import com.oneDev.ecommerce.model.request.CheckOutRequest;
 import com.oneDev.ecommerce.model.request.ShippingRateRequest;
-import com.oneDev.ecommerce.model.response.OrderItemResponse;
-import com.oneDev.ecommerce.model.response.OrderResponse;
-import com.oneDev.ecommerce.model.response.PaymentResponse;
+import com.oneDev.ecommerce.model.response.*;
 import com.oneDev.ecommerce.repository.*;
 import com.oneDev.ecommerce.service.OrderService;
 import com.oneDev.ecommerce.service.PaymentService;
@@ -19,6 +17,8 @@ import com.xendit.model.Invoice;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -165,6 +165,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Page<OrderResponse> findByUserIdAndPageable(Long userId, Pageable pageable) {
+        return orderRepository.findByUserIdByPageable(userId, pageable)
+                .map(OrderResponse::from);
+    }
+
+    @Override
     public List<Order> findByStatus(OrderStatus status) {
         return orderRepository.findByStatus(status);
     }
@@ -269,6 +275,18 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Double calculateTotalPrice(Long orderId) {
         return orderItemRepository.calculateTotalOrder(orderId);
+    }
+
+    @Override
+    public PaginatedOrderResponse convertToOrderPage(Page<OrderResponse> orderResponses) {
+        return PaginatedOrderResponse.builder()
+                .data(orderResponses.getContent())
+                .pageNo(orderResponses.getNumber())
+                .pageSize(orderResponses.getSize())
+                .totalElements(orderResponses.getTotalElements())
+                .totalPages(orderResponses.getTotalPages())
+                .last(orderResponses.isLast())
+                .build();
     }
 
 

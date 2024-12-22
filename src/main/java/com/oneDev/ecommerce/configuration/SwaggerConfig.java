@@ -27,7 +27,7 @@ public class SwaggerConfig {
                         .description("Application Ecommerce API"))
                 .servers(List.of(
                         new Server().url("https://entirely-dynamic-penguin.ngrok-free.app/api/v1").description("Ngrok Server"),
-                        new Server().url("http://localhost:8080").description("Localhost Server")
+                        new Server().url("http://localhost:8080/api/v1").description("Localhost Server")
                 ));
     }
 }
