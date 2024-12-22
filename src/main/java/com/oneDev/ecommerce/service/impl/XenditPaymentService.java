@@ -3,6 +3,7 @@ package com.oneDev.ecommerce.service.impl;
 import com.oneDev.ecommerce.entity.Order;
 import com.oneDev.ecommerce.entity.User;
 import com.oneDev.ecommerce.enumaration.ExceptionType;
+import com.oneDev.ecommerce.enumaration.OrderStatus;
 import com.oneDev.ecommerce.exception.ApplicationException;
 import com.oneDev.ecommerce.model.response.PaymentNotification;
 import com.oneDev.ecommerce.model.response.PaymentResponse;
@@ -93,16 +94,16 @@ public class XenditPaymentService implements PaymentService {
         order.setXenditPaymentStatus(status);
         switch (status){
             case "PAID":
-                order.setStatus("PAID");
+                order.setStatus(OrderStatus.PAID);
                 break;
             case "EXPIRED":
-                order.setStatus("CANCELLED");
+                order.setStatus(OrderStatus.CANCELLED);
                 break;
             case "FAILED":
-                order.setStatus("PAYMENT_FAILED");
+                order.setStatus(OrderStatus.PAYMENT_FAILED);
                 break;
             case "PENDING":
-                order.setStatus("PENDING");
+                order.setStatus(OrderStatus.PENDING);
                 break;
                 default:
         }

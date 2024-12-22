@@ -1,5 +1,6 @@
 package com.oneDev.ecommerce.entity;
 
+import com.oneDev.ecommerce.enumaration.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,7 +41,8 @@ public class Order {
     private BigDecimal totalAmount;
 
     @Column(nullable = false, length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
     @Column(name = "awb_number", length = 50)
     private String awbNumber;

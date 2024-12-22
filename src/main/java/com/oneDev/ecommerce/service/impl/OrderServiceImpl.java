@@ -2,6 +2,7 @@ package com.oneDev.ecommerce.service.impl;
 
 import com.oneDev.ecommerce.entity.*;
 import com.oneDev.ecommerce.enumaration.ExceptionType;
+import com.oneDev.ecommerce.enumaration.OrderStatus;
 import com.oneDev.ecommerce.exception.ApplicationException;
 import com.oneDev.ecommerce.model.request.CheckOutRequest;
 import com.oneDev.ecommerce.model.request.ShippingRateRequest;
@@ -12,9 +13,13 @@ import com.oneDev.ecommerce.repository.*;
 import com.oneDev.ecommerce.service.OrderService;
 import com.oneDev.ecommerce.service.PaymentService;
 import com.oneDev.ecommerce.service.ShippingService;
+import com.oneDev.ecommerce.utils.OrderStateTransaction;
+import com.xendit.exception.XenditException;
+import com.xendit.model.Invoice;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -60,7 +65,7 @@ public class OrderServiceImpl implements OrderService {
         // 3. Buat objek Order baru dengan nilai default.
         Order newOrder = Order.builder()
                 .userId(checkOutRequest.getUserId())
-                .status("PENDING") // Status default: PENDING
+                .status(OrderStatus.PENDING) // Status default: PENDING
                 .orderDate(LocalDateTime.now()) // Tanggal pesanan dibuat
                 .taxFee(BigDecimal.ZERO)
                 .totalAmount(BigDecimal.ZERO)
@@ -138,7 +143,7 @@ public class OrderServiceImpl implements OrderService {
             orderRepository.save(savedOrder);
         } catch (Exception e) {
             log.error("Payment creation for order {} failed Reason{}", savedOrder.getOrderId(), e.getMessage());
-            savedOrder.setStatus("PAYMENT_FAILED");
+            savedOrder.setStatus(OrderStatus.PAYMENT_FAILED);
             orderRepository.save(savedOrder);
              return OrderResponse.from(savedOrder);
         }
@@ -160,7 +165,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Order> findByStatus(String status) {
+    public List<Order> findByStatus(OrderStatus status) {
         return orderRepository.findByStatus(status);
     }
 
@@ -171,11 +176,15 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND,
                         "Order with id " + orderId + " not found."));
 
-        if (!"PENDING".equals(order.getStatus())) {
+        if (!OrderStateTransaction.isValidTransaction(order.getStatus(), OrderStatus.CANCELLED)){
             throw new IllegalStateException("Only PENDING orders can be cancelled.");
         }
-        order.setStatus("CANCELLED");
+        order.setStatus(OrderStatus.CANCELLED );
         orderRepository.save(order);
+        if (order.equals(OrderStatus.CANCELLED)) {
+            cancelXenditInvoice(order);
+        }
+
     }
 
     @Override
@@ -239,21 +248,54 @@ public class OrderServiceImpl implements OrderService {
     }
 
 
-    @Override
-    public void updateOrderStatus(Long orderId, String newStatus) {
+    @Override @Transactional
+    public void updateOrderStatus(Long orderId, OrderStatus newStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND,
                         "Order with id " + orderId + " not found."));
 
-        if (!"PENDING".equals(order.getStatus())) {
-            throw new IllegalStateException("Only PENDING orders can be cancelled.");
+        if (!OrderStateTransaction.isValidTransaction(order.getStatus(), newStatus)){
+            throw new IllegalStateException("Order with current status " + order.getStatus()
+                    + "can not be updated into " + newStatus);
         }
         order.setStatus(newStatus);
         orderRepository.save(order);
+
+        if (newStatus.equals(OrderStatus.CANCELLED)) {
+            cancelXenditInvoice(order);
+        }
     }
 
     @Override
     public Double calculateTotalPrice(Long orderId) {
         return orderItemRepository.calculateTotalOrder(orderId);
     }
+
+
+    private void cancelXenditInvoice(Order order) {
+        try {
+            Invoice invoice = Invoice.expire(order.getXenditInvoiceId());
+            order.setXenditPaymentStatus(invoice.getStatus());
+            orderRepository.save(order);
+        } catch (XenditException e) {
+            log.error("Error while request invoice cancellation for order with xendit id : {}", order.getOrderId());
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Scheduled(cron = "0 0/1 * 1/1 * ?")
+    @Transactional
+    public void cancelUnpaidOrder() {
+        LocalDateTime cancelThreshold = LocalDateTime.now().minusDays(1);
+        List<Order> unpaidOrders = orderRepository.findByStatusAndOrderDateBefore(OrderStatus.PENDING,
+                cancelThreshold);
+
+        for (Order order : unpaidOrders) {
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+
+            cancelXenditInvoice(order);
+        }
+    }
+
 }

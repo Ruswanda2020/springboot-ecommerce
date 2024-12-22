@@ -1,6 +1,9 @@
 package com.oneDev.ecommerce.controller;
 
 import com.oneDev.ecommerce.entity.Order;
+import com.oneDev.ecommerce.enumaration.ExceptionType;
+import com.oneDev.ecommerce.enumaration.OrderStatus;
+import com.oneDev.ecommerce.exception.ApplicationException;
 import com.oneDev.ecommerce.model.UserInfo;
 import com.oneDev.ecommerce.model.request.CheckOutRequest;
 import com.oneDev.ecommerce.model.response.OrderItemResponse;
@@ -72,7 +75,14 @@ public class OrderController {
     @PutMapping("/{orderId}/status")
     public ResponseEntity<Void> updateOrderStatus(@PathVariable("orderId") Long orderId,
                                                            @RequestParam String newStatus) {
-        orderService.updateOrderStatus(orderId, newStatus);
+
+               OrderStatus status;
+        try {
+           status =  OrderStatus.valueOf(newStatus);
+        } catch (IllegalArgumentException e) {
+            throw new ApplicationException(ExceptionType.BAD_REQUEST, "Unrecognized order status: " + newStatus);
+        }
+        orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok().build();
     }
 

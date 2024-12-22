@@ -3,6 +3,7 @@ package com.oneDev.ecommerce.model.response;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.oneDev.ecommerce.entity.Order;
+import com.oneDev.ecommerce.enumaration.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +25,7 @@ public class OrderResponse implements Serializable {
     private BigDecimal taxFee;
     private BigDecimal shippingFee;
     private BigDecimal totalAmount;
-    private String orderStatus;
+    private OrderStatus orderStatus;
     private LocalDateTime orderDate;
     private String xenditInvoiceId;
     private String xenditPaymentStatus;

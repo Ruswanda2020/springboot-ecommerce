@@ -1,6 +1,7 @@
 package com.oneDev.ecommerce.repository;
 
 import com.oneDev.ecommerce.entity.Order;
+import com.oneDev.ecommerce.enumaration.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +15,7 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByUserId(Long userId);
-    List<Order> findByStatus(String status);
+    List<Order> findByStatus(OrderStatus status);
 
 
     @Query(value = """
@@ -27,4 +28,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                                          @Param("to") LocalDateTime  to);
 
     Optional<Order> findByXenditInvoiceId(String xenditInvoiceId);
+    List<Order> findByStatusAndOrderDateBefore(OrderStatus orderStatus, LocalDateTime dateTime);
+
 }
