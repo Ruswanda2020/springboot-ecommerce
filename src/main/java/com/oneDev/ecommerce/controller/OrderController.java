@@ -1,6 +1,5 @@
 package com.oneDev.ecommerce.controller;
 
-import com.oneDev.ecommerce.entity.Order;
 import com.oneDev.ecommerce.enumaration.ExceptionType;
 import com.oneDev.ecommerce.enumaration.OrderStatus;
 import com.oneDev.ecommerce.exception.ApplicationException;
@@ -56,30 +55,39 @@ public class OrderController {
                 }).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping
+    @GetMapping("")
     public ResponseEntity<PaginatedOrderResponse> findOrdersByUserId(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "order_id, asc") String[] sort,
-            @RequestParam(required = false) String name
+            @RequestParam(defaultValue = "order_id,desc") String[] sort
     ) {
         UserInfo userInfo = userInfoHelper.getCurrentUserInfo();
 
         List<Sort.Order> sortOrder = PageUtil.parsSortOrderRequest(sort);
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortOrder));
 
-        Page<OrderResponse> orderResponses = orderService.findByUserIdAndPageable(
-                userInfo.getUser().getUserId(), pageable);
+        Page<OrderResponse> userOrders = orderService.findByUserIdAndPageable(userInfo.getUser()
+                .getUserId(), pageable);
 
-        PaginatedOrderResponse paginatedOrderResponse = orderService.convertToOrderPage(orderResponses);
+        PaginatedOrderResponse paginatedOrderResponse = orderService.convertToOrderPage(userOrders);
         return ResponseEntity.ok(paginatedOrderResponse);
     }
 
     @PutMapping("/{orderId}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable("orderId") Long orderId) {
-         orderService.cancelOrder(orderId);
-         return ResponseEntity.ok(OrderResponse.builder().build());
+        UserInfo userInfo = userInfoHelper.getCurrentUserInfo();
+        return orderService.findOrderById(orderId)
+                .map(order -> {
+                    if (!order.getUserId().equals(userInfo.getUser().getUserId())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body(OrderResponse.builder().build());
+                    }
+                    orderService.cancelOrder(orderId);
+                    return ResponseEntity.ok(OrderResponse.builder().build());
+                }).orElse(ResponseEntity.notFound().build());
     }
+
 
     @GetMapping("/{orderId}/items")
     public  ResponseEntity<List<OrderItemResponse>> findOrderItemsByOrderId(@PathVariable("orderId") Long orderId) {

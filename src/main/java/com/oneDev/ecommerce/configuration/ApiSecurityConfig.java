@@ -36,6 +36,7 @@ public class ApiSecurityConfig {
                                    "/swagger-ui/**",
                                    "/webhook/xendit")
                            .permitAll()
+                           .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                            .anyRequest().authenticated();
                 }).sessionManagement(configure -> {
                     configure.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
@@ -46,7 +47,14 @@ public class ApiSecurityConfig {
                                                             response,
                                                             authException) -> {
                             throw authException;
-                        })).build();
+                        })
+                                .accessDeniedHandler((
+                                        request,
+                                        response,
+                                        accessDeniedException) -> {
+                                    throw accessDeniedException;
+                                })
+                ).build();
     }
 
     @Bean

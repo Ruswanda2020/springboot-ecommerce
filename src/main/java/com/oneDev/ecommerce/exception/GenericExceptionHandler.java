@@ -62,6 +62,7 @@ public class GenericExceptionHandler {
         log.error("Terjadi error. status code: {}error message: {}", HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
         if (exception instanceof AccessDeniedException ||
                 exception instanceof BadCredentialsException ||
+                exception instanceof AccountStatusException ||
                 exception instanceof SignatureException ||
                 exception instanceof ExpiredJwtException ||
                 exception instanceof AuthenticationException ||

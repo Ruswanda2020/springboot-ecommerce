@@ -54,7 +54,7 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         userRepository.save(user);
-        Role role = roleRepository.findByName("ROLE_USER").orElseThrow(
+        Role role = roleRepository.findByName("ROLE_ADMIN").orElseThrow(
                 () -> new ApplicationException(ExceptionType.ROLE_NOT_FOUND)
         );
         UserRole userRoleRelation = UserRole.builder()
