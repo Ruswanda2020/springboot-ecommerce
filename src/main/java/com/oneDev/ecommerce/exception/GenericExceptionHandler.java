@@ -55,7 +55,6 @@ public class GenericExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public @ResponseBody ErrorResponse handleGenericException(HttpServletRequest req,
                                                               HttpServletResponse resp,
                                                               Exception exception) {

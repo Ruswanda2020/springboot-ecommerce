@@ -8,6 +8,7 @@ import com.oneDev.ecommerce.model.request.CheckOutRequest;
 import com.oneDev.ecommerce.model.request.ShippingRateRequest;
 import com.oneDev.ecommerce.model.response.*;
 import com.oneDev.ecommerce.repository.*;
+import com.oneDev.ecommerce.service.InventoryService;
 import com.oneDev.ecommerce.service.OrderService;
 import com.oneDev.ecommerce.service.PaymentService;
 import com.oneDev.ecommerce.service.ShippingService;
@@ -43,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final ShippingService shippingService;
     private final PaymentService paymentService;
+    private final InventoryService inventoryService;
 
     private final BigDecimal Tax_RATE = BigDecimal.valueOf(0.03);
 
@@ -50,9 +52,9 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse checkOut(CheckOutRequest checkOutRequest) {
         // 1. Ambil item di keranjang berdasarkan ID yang dipilih pengguna.
-        List<CartItem> cartItems = cartItemRepository
+        List<CartItem> selecttedItems = cartItemRepository
                 .findAllById(checkOutRequest.getSelectedCartItemIds());
-        if (cartItems.isEmpty()) {
+        if (selecttedItems.isEmpty()) {
             // Jika item kosong, lempar exception.
             throw new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND, "Cart items not found for the given IDs.");
         }
@@ -60,7 +62,15 @@ public class OrderServiceImpl implements OrderService {
         // 2. Ambil alamat pengiriman pengguna berdasarkan ID.
         UserAddresses userShippingAddress = userAddressesRepository
                 .findById(checkOutRequest.getUserAddressId())
-                .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND, "User address not found."));
+                .orElseThrow(
+                        () -> new ApplicationException(
+                                ExceptionType.RESOURCE_NOT_FOUND, "Shipping address with id: "+ checkOutRequest.getUserAddressId()+ "is not found"));
+
+        Map<Long, Integer> productQuantities = selecttedItems.stream()
+                .collect(Collectors.toMap(CartItem::getProductId, CartItem::getQuantity));
+        if(!inventoryService.checkAndLockInventory(productQuantities)){
+            throw new ApplicationException(ExceptionType.BAD_REQUEST, "Insufficient inventory for one more products");
+        }
 
         // 3. Buat objek Order baru dengan nilai default.
         Order newOrder = Order.builder()
@@ -77,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(newOrder);
 
         // 5. Konversi item keranjang ke orderItems dan simpan ke database.
-        List<OrdersItems> orderItems = cartItems.stream()
+        List<OrdersItems> orderItems = selecttedItems.stream()
                 .map(cartItem -> OrdersItems.builder()
                         .orderId(savedOrder.getOrderId()) // ID order yang baru dibuat
                         .productId(cartItem.getProductId())
@@ -89,7 +99,7 @@ public class OrderServiceImpl implements OrderService {
         orderItemRepository.saveAll(orderItems);
 
         // 6. Hapus item keranjang yang sudah diproses.
-        cartItemRepository.deleteAll(cartItems);
+        cartItemRepository.deleteAll(selecttedItems);
 
         // 7. Hitung subtotal berdasarkan harga * kuantitas setiap item.
         BigDecimal subTotal = orderItems.stream()
@@ -141,6 +151,7 @@ public class OrderServiceImpl implements OrderService {
             paymentUrl = paymentResponse.getXenditPaymentUrl();
 
             orderRepository.save(savedOrder);
+            inventoryService.decreaseProductQuantity(productQuantities);
         } catch (Exception e) {
             log.error("Payment creation for order {} failed Reason{}", savedOrder.getOrderId(), e.getMessage());
             savedOrder.setStatus(OrderStatus.PAYMENT_FAILED);
@@ -150,6 +161,7 @@ public class OrderServiceImpl implements OrderService {
 
         OrderResponse orderResponse = OrderResponse.from(savedOrder);
         orderResponse.setXenditPaymentUrl(paymentUrl);
+
         return orderResponse;
     }
 
@@ -185,10 +197,16 @@ public class OrderServiceImpl implements OrderService {
         if (!OrderStateTransaction.isValidTransaction(order.getStatus(), OrderStatus.CANCELLED)){
             throw new IllegalStateException("Only PENDING orders can be cancelled.");
         }
+
+        List<OrdersItems> orderItemList = orderItemRepository.findByOrderId(orderId);
+        Map<Long, Integer> productQuantities = orderItemList.stream()
+                        .collect(Collectors.toMap(OrdersItems::getProductId, OrdersItems::getQuantity));
+
         order.setStatus(OrderStatus.CANCELLED );
         orderRepository.save(order);
         if (order.getStatus().equals(OrderStatus.CANCELLED)) {
             cancelXenditInvoice(order);
+            inventoryService.increaseProductQuantity(productQuantities);
         }
 
     }
@@ -266,6 +284,11 @@ public class OrderServiceImpl implements OrderService {
         }
         order.setStatus(newStatus);
         orderRepository.save(order);
+
+        List<OrdersItems> orderItemList = orderItemRepository.findByOrderId(orderId);
+        Map<Long, Integer> productQuantities = orderItemList.stream()
+                .collect(Collectors.toMap(OrdersItems::getProductId, OrdersItems::getQuantity));
+        inventoryService.increaseProductQuantity(productQuantities);
 
         if (newStatus.equals(OrderStatus.CANCELLED)) {
             cancelXenditInvoice(order);

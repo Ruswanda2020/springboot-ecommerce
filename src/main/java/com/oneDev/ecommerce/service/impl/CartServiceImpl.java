@@ -41,7 +41,7 @@ public class CartServiceImpl implements CartService {
                 });
 
         // Ambil produk berdasarkan productId, jika tidak ditemukan, lempar exception
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
                 .orElseThrow(() -> new ApplicationException(
                         ExceptionType.RESOURCE_NOT_FOUND,
                         "Product with ID " + productId + " not found"));
@@ -50,6 +50,11 @@ public class CartServiceImpl implements CartService {
         if (product.getUserId() != null && product.getUserId().equals(userId)) {
             throw new ApplicationException(ExceptionType.BAD_REQUEST,
                     "Cannot add your own product to cart.");
+        }
+
+        //validasi jika stoknya productnya lebih kecil == 0 lempar exception
+        if (product.getStockQuantity() <= 0){
+            throw new ApplicationException(ExceptionType.BAD_REQUEST, "Product stock is equals or below zero");
         }
 
         // Periksa apakah produk sudah ada di keranjang
