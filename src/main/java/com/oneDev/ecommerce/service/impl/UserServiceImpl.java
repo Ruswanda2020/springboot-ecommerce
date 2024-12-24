@@ -11,6 +11,7 @@ import com.oneDev.ecommerce.model.response.UserResponse;
 import com.oneDev.ecommerce.repository.RoleRepository;
 import com.oneDev.ecommerce.repository.UserRepository;
 import com.oneDev.ecommerce.repository.UserRoleRepository;
+import com.oneDev.ecommerce.service.CacheService;
 import com.oneDev.ecommerce.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,9 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String USER_CACHE_KEY = "cache:user:";
+    private final String USER_ROLES_CACHE_KEY = "cache:user:roles:";
+    private final CacheService cacheService;
 
     @Override @Transactional
     public UserResponse register(UserRegisterRequest userRegisterRequest) {
@@ -75,8 +79,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse findByKeyword(String keyword) {
-        User user = userRepository.findByKeyword(keyword).
+    public UserResponse findByUsernameOrEmail(String keyword) {
+        User user = userRepository.findByUsernameOrEmail(keyword).
                 orElseThrow(() -> new ApplicationException(ExceptionType.USER_NOT_FOUND,
                         ExceptionType.USER_NOT_FOUND.getFormattedMessage("With username / email: " + keyword)));
         List<Role> userRoles = roleRepository.findByUserId(user.getUserId());
@@ -113,8 +117,12 @@ public class UserServiceImpl implements UserService {
             user.setEmail(userUpdateRequest.getEmail());
         }
 
+        String userKey = USER_CACHE_KEY + user.getUsername();
+        String userRolesKey = USER_ROLES_CACHE_KEY + user.getUsername();
         userRepository.save(user);
         List<Role> roles = roleRepository.findByUserId(user.getUserId());
+        cacheService.evict(userKey);
+        cacheService.evict(userRolesKey);
         return UserResponse.from(user, roles);
     }
 

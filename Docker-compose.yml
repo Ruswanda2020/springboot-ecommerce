@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis-ecommerce
+    ports:
+      - "6390:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    restart: always
+
+volumes:
+  redis-data:

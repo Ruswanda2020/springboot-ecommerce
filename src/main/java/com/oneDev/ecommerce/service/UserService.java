@@ -7,7 +7,7 @@ import com.oneDev.ecommerce.model.response.UserResponse;
 public interface UserService {
     UserResponse register(UserRegisterRequest userRegisterRequest);
     UserResponse findById(Long userId);
-    UserResponse findByKeyword(String keyword);
+    UserResponse findByUsernameOrEmail(String keyword);
     UserResponse updateUser(Long userId, UserUpdateRequest userUpdateRequest);
     boolean existsByUserName(String userName);
     boolean existsByEmail(String email);

@@ -11,6 +11,7 @@ import com.oneDev.ecommerce.model.request.ProductRequest;
 import com.oneDev.ecommerce.model.response.ProductResponse;
 import com.oneDev.ecommerce.repository.ProductCategoryRepository;
 import com.oneDev.ecommerce.repository.ProductRepository;
+import com.oneDev.ecommerce.service.CacheService;
 import com.oneDev.ecommerce.service.CategoryService;
 import com.oneDev.ecommerce.service.ProductService;
 import jakarta.transaction.Transactional;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,8 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryService categoryService;
     private final ProductCategoryRepository productCategoryRepository;
+    private final String PRODUCT_CACHE_KEY = "products:";
+    private final CacheService cacheService;
 
 
     @Override
@@ -43,11 +47,19 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse findProductById(Long productId) {
+        String cacheKey = PRODUCT_CACHE_KEY + productId;
+        Optional<ProductResponse> cachedProduct = cacheService.get(cacheKey, ProductResponse.class);
+        if (cachedProduct.isPresent()){
+            return cachedProduct.get();
+        }
+
         Product existingProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new ApplicationException(ExceptionType.RESOURCE_NOT_FOUND));
 
         List<CategoryResponse> productCategories = getProductCategories(productId);
-        return ProductResponse.fromProductAndCategories(existingProduct, productCategories);
+        ProductResponse productResponse = ProductResponse.fromProductAndCategories(existingProduct, productCategories);
+        cacheService.put(cacheKey, productResponse);
+        return productResponse;
     }
 
     @Override @Transactional
@@ -79,7 +91,10 @@ public class ProductServiceImpl implements ProductService {
         List<CategoryResponse> categoryResponseList = categories.stream()
                 .map(CategoryResponse::from).toList();
 
-        return ProductResponse.fromProductAndCategories(savedProduct, categoryResponseList);
+        String cacheKey = PRODUCT_CACHE_KEY + savedProduct.getProductId();
+        ProductResponse productResponse = ProductResponse.fromProductAndCategories(savedProduct, categoryResponseList);
+        cacheService.put(cacheKey, productResponse);
+        return productResponse;
     }
 
     @Override @Transactional
@@ -119,7 +134,8 @@ public class ProductServiceImpl implements ProductService {
         List<CategoryResponse> categoryResponseList = categories.stream()
                 .map(CategoryResponse::from).toList();
 
-
+        String cacheKey = PRODUCT_CACHE_KEY + productId;
+        cacheService.evict(cacheKey);
         return ProductResponse.fromProductAndCategories(existingProduct, categoryResponseList);
     }
 

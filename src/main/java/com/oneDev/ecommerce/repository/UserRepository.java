@@ -15,15 +15,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
        SELECT * FROM users
-       WHERE username = :keyword
-       OR email = :keyword
+       WHERE username = :usernameOrEmail
+       OR email = :usernameOrEmail
     """, nativeQuery = true)
-    Optional<User> findByKeyword(@Param("keyword") String keyword);
+    Optional<User> findByUsernameOrEmail(@Param("usernameOrEmail") String usernameOrEmail);
+
     Boolean existsByUsername(String username);
     Boolean existsByEmail(String email);
 
     @Query(value = """
-       SELECT * FROM users 
+       SELECT * FROM users
        WHERE lower(username) LIKE lower(CONCAT('%', :usernameOrEmail, '%')) 
           OR lower(email) LIKE lower(CONCAT('%', :usernameOrEmail, '%'))
 """, nativeQuery = true)
