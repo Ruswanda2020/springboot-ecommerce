@@ -14,10 +14,10 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
-       SELECT * FROM users
-       WHERE username = :usernameOrEmail
-       OR email = :usernameOrEmail
-    """, nativeQuery = true)
+   SELECT * FROM users
+   WHERE lower(username) = lower(:usernameOrEmail)
+   OR lower(email) = lower(:usernameOrEmail)
+""", nativeQuery = true)
     Optional<User> findByUsernameOrEmail(@Param("usernameOrEmail") String usernameOrEmail);
 
     Boolean existsByUsername(String username);

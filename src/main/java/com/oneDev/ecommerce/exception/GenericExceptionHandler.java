@@ -2,6 +2,7 @@ package com.oneDev.ecommerce.exception;
 
 import com.oneDev.ecommerce.enumaration.ExceptionType;
 import com.oneDev.ecommerce.model.response.ErrorResponse;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -95,6 +96,16 @@ public class GenericExceptionHandler {
         return ErrorResponse.builder()
                 .code(HttpStatus.BAD_REQUEST.value())
                 .message(errors.toString())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler(RequestNotPermitted.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public @ResponseBody ErrorResponse handleRateLimitException(HttpServletRequest request, Exception e) {
+        return ErrorResponse.builder()
+                .code(HttpStatus.TOO_MANY_REQUESTS.value())
+                .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
     }

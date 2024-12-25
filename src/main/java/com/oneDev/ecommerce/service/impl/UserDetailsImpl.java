@@ -48,7 +48,9 @@ public class UserDetailsImpl implements UserDetailsService {
                     .build();
         }
 
+        log.info("Attempting to load user by username or email: {}", usernameOrEmail);
         User user = userRepository.findByUsernameOrEmail(usernameOrEmail)
+
                 .orElseThrow(() -> new ApplicationException(ExceptionType.USER_NOT_FOUND, "User not found with: " + usernameOrEmail));
 
 

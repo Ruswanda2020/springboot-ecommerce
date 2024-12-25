@@ -14,6 +14,7 @@ import com.oneDev.ecommerce.repository.ProductRepository;
 import com.oneDev.ecommerce.service.CacheService;
 import com.oneDev.ecommerce.service.CategoryService;
 import com.oneDev.ecommerce.service.ProductService;
+import com.oneDev.ecommerce.service.RateLimitingService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductCategoryRepository productCategoryRepository;
     private final String PRODUCT_CACHE_KEY = "products:";
     private final CacheService cacheService;
+    private final RateLimitingService rateLimitingService;
 
 
     @Override
@@ -165,11 +167,12 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<ProductResponse> findByPage(Pageable pageable) {
-        return productRepository.findByPageable(pageable)
-                .map(product -> {
-                    List<CategoryResponse> categoryResponses = getProductCategories(product.getProductId());
-                    return ProductResponse.fromProductAndCategories(product, categoryResponses);
-                });
+        return rateLimitingService.executeWithRateLimit("product_listing",
+                () -> productRepository.findByPageable(pageable)
+                        .map(product -> {
+                            List<CategoryResponse> categoryResponses = getProductCategories(product.getProductId());
+                            return ProductResponse.fromProductAndCategories(product, categoryResponses);
+                        }));
     }
 
     private List<CategoryResponse> getProductCategories(Long productId) {
