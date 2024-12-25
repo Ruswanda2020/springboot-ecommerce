@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -106,17 +107,14 @@ public class MockShippingServiceImpl implements ShippingService {
         Map<Long, Product> productMap = products.stream()
                 .collect(Collectors.toMap(Product::getProductId, Function.identity()));
 
-        //hitung total berat dengan stream
-        BigDecimal totalWeight = ordersItems.stream()
-                .map(item -> {
-                    Product product = productMap.get(item.getProductId());
-                    if (product == null) {
-                        throw new ApplicationException(
-                                ExceptionType.RESOURCE_NOT_FOUND, "Product not found with id: " + item.getProductId());
-                    }
-                    return product.getWeight().multiply(BigDecimal.valueOf(item.getQuantity()));
-                }).reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return totalWeight;
+        return ordersItems.stream()
+                .map(item -> Optional.ofNullable(productMap.get(item.getProductId()))
+                            .map(product -> product.getWeight().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .orElseThrow(() -> new ApplicationException(
+                                    ExceptionType.RESOURCE_NOT_FOUND,
+                                    "Product not found with id: " + item.getProductId()))
+                )
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
 }

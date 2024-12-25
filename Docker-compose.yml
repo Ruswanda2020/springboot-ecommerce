@@ -3,6 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:15
+    container_name: postgres-db
     ports:
       - "5435:5432"
     environment:
@@ -11,6 +12,7 @@ services:
       - POSTGRES_PASSWORD=passwordwanda12345
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-sonarqube-db.sh:/docker-entrypoint-initdb.d/init-sonarqube-db.sh
 
   redis:
     image: redis:7.0-alpine
@@ -22,6 +24,25 @@ services:
       - redis-data:/data
     restart: always
 
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    depends_on:
+      - db
+
 volumes:
   postgres_data:
   redis-data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
