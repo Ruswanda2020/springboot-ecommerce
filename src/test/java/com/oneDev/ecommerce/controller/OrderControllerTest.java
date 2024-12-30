@@ -13,11 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -27,7 +27,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.http.RequestEntity.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,7 +41,7 @@ class OrderControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private OrderService orderService;
 
     private CheckOutRequest checkoutRequest;
@@ -89,17 +89,17 @@ class OrderControllerTest {
     }
 
     @Test
-    void createOrder() {
+    void testCheckout_whenRequestIsValid() throws Exception {
         when(orderService.checkOut(any(CheckOutRequest.class))).thenReturn(orderResponse);
 
         mockMvc.perform(post("/orders/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(checkoutRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.order_status").value("PENDING"))
                 .andExpect(jsonPath("$.total_amount").value(100.00))
                 .andExpect(jsonPath("$.shipping_fee").value(10.00))
-                .andExpect(jsonPath("$.payment_url").value("http://payment.url"))
+                .andExpect(jsonPath("$.xendit_payment_url").value("http://payment.url"))
                 .andExpect(jsonPath("$.order_id").value(1));
 
         verify(orderService).checkOut(argThat(request -> request.getUserId().equals(1L) &&
