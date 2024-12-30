@@ -10,8 +10,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5435:5432
+        env:
+          POSTGRES_DB: ecommerce-db
+          POSTGRES_USER: ecommerce_user
+          POSTGRES_PASSWORD: passwordwanda12345
+
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up JDK 23
         uses: actions/setup-java@v3
         with:
@@ -19,10 +30,25 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Wait for PostgreSQL to start
+        run: |
+          until pg_isready -h localhost -p 5435; do
+            echo "Waiting for PostgreSQL..."
+            sleep 1
+          done
+
       - name: Build with Maven
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5435/ecommerce-db
+          SPRING_DATASOURCE_USERNAME: ecommerce_user
+          SPRING_DATASOURCE_PASSWORD: passwordwanda12345
         run: mvn clean install
 
       - name: Run tests
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5435/ecommerce-db
+          SPRING_DATASOURCE_USERNAME: ecommerce_user
+          SPRING_DATASOURCE_PASSWORD: passwordwanda12345
         run: mvn test
 
       - name: Generate JaCoCo Coverage Report
