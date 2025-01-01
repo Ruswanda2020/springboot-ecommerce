@@ -66,12 +66,12 @@ Konfigurasikan variabel environment berikut sebelum menjalankan aplikasi:
 - `XENDIT_SECRET_KEY`: API key Xendit
 
 ## Penggunaan
-Gunakan tools seperti Postman atau Swagger untuk menguji endpoint API. Dokumentasi API tersedia di http://localhost:8080/swagger-ui.
+Gunakan tools seperti Postman atau Swagger untuk menguji endpoint API. Dokumentasi API tersedia di http://localhost:8080/api/v1/swagger-ui.
 
 ## Entity-Relationship Diagram (ERD)
 Berikut adalah diagram ERD untuk struktur database aplikasi ini:
 
-![erd-ecommerce.png](../../Downloads/erd-ecommerce.png)
+![erd-ecommerce.png](docs/erd-ecommerce.png)
 
 ## Dokumentasi Teknis
 ### Struktur Folder
