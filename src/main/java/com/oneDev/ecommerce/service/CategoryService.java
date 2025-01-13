@@ -7,5 +7,5 @@ import java.util.List;
 public interface CategoryService {
 
     List<Category> findAll(List<Long> categoryIds);
-
+    List<Category> getProductCategories(Long productId);
 }

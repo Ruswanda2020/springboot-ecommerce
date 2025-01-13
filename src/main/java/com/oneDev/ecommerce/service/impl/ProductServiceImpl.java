@@ -11,10 +11,7 @@ import com.oneDev.ecommerce.model.request.ProductRequest;
 import com.oneDev.ecommerce.model.response.ProductResponse;
 import com.oneDev.ecommerce.repository.ProductCategoryRepository;
 import com.oneDev.ecommerce.repository.ProductRepository;
-import com.oneDev.ecommerce.service.CacheService;
-import com.oneDev.ecommerce.service.CategoryService;
-import com.oneDev.ecommerce.service.ProductService;
-import com.oneDev.ecommerce.service.RateLimitingService;
+import com.oneDev.ecommerce.service.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,6 +31,7 @@ public class ProductServiceImpl implements ProductService {
     private final String PRODUCT_CACHE_KEY = "products:";
     private final CacheService cacheService;
     private final RateLimitingService rateLimitingService;
+    private final ProductIdxService productIdxService;
 
 
     @Override
@@ -96,6 +94,7 @@ public class ProductServiceImpl implements ProductService {
         String cacheKey = PRODUCT_CACHE_KEY + savedProduct.getProductId();
         ProductResponse productResponse = ProductResponse.fromProductAndCategories(savedProduct, categoryResponseList);
         cacheService.put(cacheKey, productResponse);
+        productIdxService.reIndexProduct(savedProduct);
         return productResponse;
     }
 
@@ -138,6 +137,7 @@ public class ProductServiceImpl implements ProductService {
 
         String cacheKey = PRODUCT_CACHE_KEY + productId;
         cacheService.evict(cacheKey);
+        productIdxService.reIndexProduct(existingProduct);
         return ProductResponse.fromProductAndCategories(existingProduct, categoryResponseList);
     }
 
@@ -149,6 +149,7 @@ public class ProductServiceImpl implements ProductService {
         List<ProductCategory> existingProductCategories = productCategoryRepository.findCategoriesByProductId(productId);
 
         productCategoryRepository.deleteAll(existingProductCategories);
+        productIdxService.deleteProduct(existingProduct);
         productRepository.delete(existingProduct);
 
     }
