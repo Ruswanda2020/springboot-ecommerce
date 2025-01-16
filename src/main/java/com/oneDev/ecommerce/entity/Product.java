@@ -41,6 +41,7 @@ public class Product {
 
     @Column(name = "user_id")
     private Long userId;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

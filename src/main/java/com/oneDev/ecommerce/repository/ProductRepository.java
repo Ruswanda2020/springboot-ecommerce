@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -41,4 +42,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     WHERE p.productId = :id
     """)
     Optional<Product> findByIdWithPessimisticLock(@Param("id") Long id);
+
+    @Query(value = """
+    SELECT  * FROM product
+    """, nativeQuery = true)
+    Stream<Product> streamAll();
 }
