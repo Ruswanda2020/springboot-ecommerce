@@ -10,6 +10,7 @@ import com.oneDev.ecommerce.entity.Product;
 import com.oneDev.ecommerce.model.ProductDocument;
 import com.oneDev.ecommerce.service.CategoryService;
 import com.oneDev.ecommerce.service.ProductIdxService;
+import io.github.resilience4j.retry.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -25,6 +26,7 @@ public class ProductIdxServiceImpl implements ProductIdxService {
 
     private final CategoryService categoryService;
     private final ElasticsearchClient elasticsearchClient;
+    private final Retry elasticSearchIndexRetrier;
     private static final String INDEX_NAME = "products";
 
     @Override @Async
@@ -37,26 +39,36 @@ public class ProductIdxServiceImpl implements ProductIdxService {
                         .id(String.valueOf(product.getProductId()))
                         .document(productDocument));
 
-        IndexResponse response = null;
+
         try {
-            response = elasticsearchClient.index(indexRequest);
+            elasticSearchIndexRetrier.executeCallable(() -> {
+                        elasticsearchClient.index(indexRequest);
+                        return null;
+                    });
+
         } catch (IOException ex) {
             log.error("Error while reindex product with id: {}Error{}", product.getProductId(), ex.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
     }
 
-    @Override
+    @Override @Async
     public void deleteProduct(Product product) {
         DeleteRequest deleteRequest = DeleteRequest.of(builder ->
                 builder.index(indexName())
                         .id(String.valueOf(product.getProductId())));
-
-        DeleteResponse response = null;
         try {
-            response = elasticsearchClient.delete(deleteRequest);
+            elasticSearchIndexRetrier.executeCallable(() -> {
+                elasticsearchClient.delete(deleteRequest);
+                return null;
+            });
+
         } catch (IOException ex) {
             log.error("Error while deleting product with id: {}Error{}", product.getProductId(), ex.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
