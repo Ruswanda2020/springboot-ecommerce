@@ -1,15 +1,19 @@
 package com.oneDev.ecommerce.controller;
 
 import com.oneDev.ecommerce.model.UserInfo;
+import com.oneDev.ecommerce.model.request.SearchProductsRequest;
 import com.oneDev.ecommerce.model.response.PaginatedProductResponse;
 import com.oneDev.ecommerce.model.request.ProductRequest;
 import com.oneDev.ecommerce.model.response.ProductResponse;
+import com.oneDev.ecommerce.model.response.SearchProductsResponse;
 import com.oneDev.ecommerce.service.ProductService;
+import com.oneDev.ecommerce.service.SearchProductService;
 import com.oneDev.ecommerce.utils.PageUtil;
 import com.oneDev.ecommerce.utils.UserInfoHelper;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,10 +28,12 @@ import java.util.List;
 @RequestMapping("/product")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Bearer")
+@Slf4j
 public class ProductController {
 
     private final ProductService productService;
     private final UserInfoHelper userInfoHelper;
+    private final SearchProductService searchProductService;
 
     @GetMapping("/{productId}")
     public ResponseEntity<ProductResponse> findProductById(@PathVariable Long productId) {
@@ -50,6 +56,13 @@ public class ProductController {
                                                          @Valid @RequestBody ProductRequest productRequest) {
         ProductResponse productResponse = productService.updateProductById(productId, productRequest);
         return ResponseEntity.ok(productResponse);
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<SearchProductsResponse<ProductResponse>> search(@RequestBody SearchProductsRequest searchProductsRequest){
+        log.info("Incoming search request: {}", searchProductsRequest);
+        SearchProductsResponse<ProductResponse> response = searchProductService.search(searchProductsRequest);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
